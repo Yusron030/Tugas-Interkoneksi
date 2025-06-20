@@ -1,1 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🌐 Web3 Sensor Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
 
+    .container {
+      background: #1e293b;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.4);
+      text-align: center;
+      width: 400px;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #38bdf8;
+      font-size: 24px;
+    }
+
+    #wallet-status {
+      margin-bottom: 15px;
+      font-weight: bold;
+    }
+
+    .connected {
+      color: #4ade80;
+    }
+
+    .disconnected {
+      color: #f87171;
+    }
+
+    .data-box {
+      background: #334155;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+
+    .data-box p {
+      margin: 10px 0;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    button {
+      background-color: #38bdf8;
+      color: #0f172a;
+      border: none;
+      padding: 10px 15px;
+      margin: 5px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #0ea5e9;
+    }
+
+    @media screen and (max-width: 500px) {
+      .container {
+        width: 90%;
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🌡️ Web3 Sensor Monitoring</h1>
+    <p id="wallet-status">MetaMask: <span class="disconnected">Disconnected</span></p>
+
+    <div class="data-box">
+      <p id="temp">Suhu: --</p>
+      <p id="hum">Kelembaban: --</p>
+      <p id="hash">Hash TX: --</p>
+    </div>
+
+    <button onclick="connectWallet()">🔗 Connect Wallet</button>
+    <button onclick="getData()">📥 Ambil Data Terbaru</button>
+  </div>
+
+  <script>
+    const contractAddress = "0x5cC3d684165094ee3c98dc7e910a34f29a013a07"; // Ganti sesuai kontrakmu
+    let contract;
+
+    async function connectWallet() {
+      if (typeof window.ethereum !== 'undefined') {
+        try {
+          await ethereum.request({ method: 'eth_requestAccounts' });
+          document.getElementById("wallet-status").innerHTML =
+            'MetaMask: <span class="connected">Connected</span>';
+
+          const provider = new ethers.providers.Web3Provider(window.ethereum);
+          const signer = provider.getSigner();
+
+          const abi = await fetch("./SensorStorage.json").then((res) => res.json());
+          contract = new ethers.Contract(contractAddress, abi.abi, signer);
+        } catch (err) {
+          console.error("Wallet connect error:", err);
+        }
+      } else {
+        alert("MetaMask tidak ditemukan! Silakan install terlebih dahulu.");
+      }
+    }
+
+    async function getData() {
+      if (!contract) return alert("Connect wallet dulu!");
+
+      try {
+        const latest = await contract.getLatest();
+        document.getElementById("temp").innerText = `Suhu: ${latest.temperature} °C`;
+        document.getElementById("hum").innerText = `Kelembaban: ${latest.humidity} %`;
+        document.getElementById("hash").innerText = `Hash TX: ${latest.timestamp}`;
+      } catch (err) {
+        console.error("Gagal ambil data dari contract:", err);
+        alert("Gagal ambil data dari smart contract.");
+      }
+    }
+  </script>
+</body>
+</html>
